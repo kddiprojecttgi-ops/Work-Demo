@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A robust and modern truck delivery records database system." />
+    <title>Truck Record Management</title>
+    <!-- Tailwind CSS is compiled automatically through the style.css import by Vite -->
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans">
+    
+    <!-- Top Decorative Gradient Ingress Bar -->
+    <div class="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500" id="visual-ingress-bar"></div>
+
+    <!-- Header Panel -->
+    <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 shrink-0" id="main-app-header">
+      <div class="max-w-6xl mx-auto px-4 py-5 md:py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <!-- Logo Branding -->
+        <div class="flex items-center gap-3.5 text-center md:text-left" id="header-brand-logo">
+          <div class="p-2.5 bg-indigo-600 rounded-xl shadow-inner inline-flex items-center justify-center text-white" id="logo-icon-wrapper">
+            <!-- Delivery Truck SVG Inline Icon -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="logo-truck-svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125a1.125 1.125 0 001.125-1.125V9.75M8.25 18.75V14.25m0 0H12m.002 0h7.128m0 0l9.14-3.11c.312-.106.528-.402.528-.732V9.75M12 14.25V9.75M12 9.75h4.125m3.128 0H16.125M16.125 9.75V3.375c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125 1.125-1.125 1.125V14.25" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight md:text-2xl" id="app-title-header" data-i18n="appTitle">Truck Delivery Log</h1>
+            <p class="text-xs text-slate-400 font-medium" id="app-subtitle-header" data-i18n="appSubtitle">Fleet Warehouse Records & Logistics Administration</p>
+            <div class="flex items-center gap-2 mt-1.5" id="db-status-container">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700/60" id="db-status-badge">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse" id="db-status-indicator"></span>
+                <span id="db-status-text" data-i18n="dbChecking">Checking Database...</span>
+              </span>
+              <button type="button" id="supabase-setup-help-btn" class="text-[10px] text-indigo-400 font-bold hover:underline hidden cursor-pointer" title="View Supabase setup instructions" data-i18n="dbSetupGuideBtn" data-i18n-title="dbSetupGuideBtn">
+                Setup Setup Guide &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-time Summary Cards in Header -->
+        <div class="flex items-center gap-3 md:gap-4 shrink-0 overflow-x-auto w-full md:w-auto" id="header-stats-panel">
+          
+          <!-- Stat 1: Total Registered -->
+          <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3.5 py-2.5 flex flex-col items-center min-w-[7.5rem] flex-1 md:flex-initial" id="stat-card-total">
+            <span class="text-[0.68rem] text-slate-400 font-semibold uppercase tracking-wider" data-i18n="statTotalLogs">Total Logs</span>
+            <span class="text-lg font-bold text-slate-100 font-mono" id="stat-total-records">0</span>
+          </div>
+
+          <!-- Stat 2: Matches (Filtered) -->
+          <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3.5 py-2.5 flex flex-col items-center min-w-[7.5rem] flex-1 md:flex-initial" id="stat-card-filtered">
+            <span class="text-[0.68rem] text-slate-400 font-semibold uppercase tracking-wider" data-i18n="statFilteredItems">Filtered Items</span>
+            <span class="text-lg font-bold text-indigo-400 font-mono" id="stat-filtered-records">0</span>
+          </div>
+
+          <!-- Stat 3: Unique Active Vehicles -->
+          <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3.5 py-2.5 flex flex-col items-center min-w-[7.5rem] flex-1 md:flex-initial" id="stat-card-trucks">
+            <span class="text-[0.68rem] text-slate-400 font-semibold uppercase tracking-wider" data-i18n="statActiveFleet">Active Fleet</span>
+            <span class="text-lg font-bold text-emerald-400 font-mono" id="stat-unique-trucks">0</span>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex flex-col gap-8" id="main-content-layout">
+
+      <!-- Supabase Setup Alert Banner (Hidden by default, shown if tables are missing on Supabase) -->
+      <section class="bg-indigo-950 text-white border border-indigo-800 rounded-2xl p-6 hidden flex-col sm:flex-row gap-5 items-start justify-between shadow-xl shadow-slate-100" id="supabase-alert-banner">
+        <div class="flex gap-4 items-start" id="supabase-alert-body">
+          <div class="p-3 bg-indigo-900 text-indigo-300 border border-indigo-850 rounded-xl shrink-0" id="supabase-alert-icon-wrapper">
+            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <h3 class="text-sm font-bold text-white tracking-tight" data-i18n="alertBannerTitle">Need Table Migrations Setup in Supabase</h3>
+            <p class="text-xs text-indigo-200/90 font-medium leading-relaxed max-w-2xl" data-i18n-html="alertBannerDescHtml">
+              We connected to your live Supabase project, but the required database tables <strong class="text-emerald-300 font-mono">truck_records</strong> or <strong class="text-emerald-300 font-mono">truck_options</strong> are not created yet. 
+              The application is running beautifully on <strong class="text-amber-400">LocalStorage fallback mode</strong> for now. 
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2.5">
+              <button type="button" id="btn-show-sql-script" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-sm cursor-pointer hover:-translate-y-0.5 active:translate-y-0" data-i18n="alertBannerBtnInstaller">
+                Show Supabase SQL Installer
+              </button>
+              <button type="button" id="btn-dismiss-supabase" class="px-3 py-1.5 bg-indigo-900 border border-indigo-800 hover:bg-indigo-850 text-indigo-300 font-bold text-[10px] rounded-lg transition-all cursor-pointer" data-i18n="alertBannerBtnDismiss">
+                Dismiss Notice
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Supabase Setup Instruction Modal -->
+      <div id="supabase-setup-modal" class="fixed inset-0 bg-slate-910/70 backdrop-blur-xs flex items-center justify-center p-4 z-55 hidden transition-all">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh]" id="supabase-modal-card">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3" id="setup-modal-header">
+            <div class="flex items-center gap-2">
+              <span class="p-1 px-1.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold font-mono">SUPABASE</span>
+              <h2 class="text-sm font-bold text-slate-900" data-i18n="modalInstructionsTitle">Database Schema Installation Steps</h2>
+            </div>
+            <button type="button" id="close-setup-modal-btn" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="overflow-y-auto pr-1 flex flex-col gap-4 text-xs text-slate-600" id="setup-modal-body">
+            <div>
+              <p class="font-bold text-slate-800" data-i18n="modalInstructionsIntro">Follow these simple steps to live-connect your database queries:</p>
+              <ol class="list-decimal pl-4 mt-2 space-y-1.5 leading-relaxed font-semibold text-slate-600">
+                <li data-i18n-html="modalStep1Html">Log in to your Supabase project dashboard: <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-bold inline-flex items-center">https://supabase.com/dashboard &nearr;</a></li>
+                <li data-i18n="modalStep2">Select the project matching your provided link.</li>
+                <li data-i18n="modalStep3">Go to the SQL Editor tab on the left-side navigation rail.</li>
+                <li data-i18n="modalStep4">Click New Query.</li>
+                <li data-i18n="modalStep5">Copy the system SQL migration script below, paste it, and click Run (or press cmd+Enter).</li>
+                <li data-i18n="modalStep6">Refresh this application! Your data is fully linked up.</li>
+              </ol>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-800 uppercase tracking-wider text-[10px]" data-i18n="modalSqlBanner">Setup SQL Query Script</span>
+                <button type="button" id="btn-copy-setup-sql" class="text-[10px] bg-slate-100 hover:bg-indigo-50 text-indigo-600 border border-slate-200 font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer" data-i18n="modalCopyScriptBtn">
+                  Copy Script
+                </button>
+              </div>
+              <pre class="bg-slate-950 text-slate-200 rounded-xl p-3.5 font-mono text-[10px] overflow-x-auto select-all max-h-52 border border-slate-800 leading-normal" id="sql-script-pre"><code>-- Create truck_options table for dynamic dropdowns
+CREATE TABLE IF NOT EXISTS truck_options (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  type TEXT NOT NULL, -- 'truckNumbers', 'owners', 'warehouses'
+  value TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_type_value UNIQUE (type, value)
+);
+
+-- Seed initial lookup options
+INSERT INTO truck_options (type, value) VALUES
+  ('truckNumbers', 'TRK-101'),
+  ('truckNumbers', 'TRK-202'),
+  ('truckNumbers', 'TRK-303'),
+  ('truckNumbers', 'TRK-404'),
+  ('truckNumbers', 'TRK-505'),
+  ('owners', 'Apex Logistics'),
+  ('owners', 'Horizon Transport'),
+  ('owners', 'Swift Haulers'),
+  ('owners', 'BlueSky Cargo'),
+  ('owners', 'Standard Delivery'),
+  ('warehouses', 'WH-Alpha'),
+  ('warehouses', 'WH-Beta'),
+  ('warehouses', 'WH-Gamma'),
+  ('warehouses', 'WH-Delta')
+ON CONFLICT (type, value) DO NOTHING;
+
+-- Create truck_records table for deliveries
+CREATE TABLE IF NOT EXISTS truck_records (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  date DATE NOT NULL,
+  truck_number TEXT NOT NULL,
+  owner TEXT NOT NULL,
+  warehouse_number TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed initial sample delivery logs
+INSERT INTO truck_records (date, truck_number, owner, warehouse_number) VALUES
+  ('2026-01-20', 'TRK-101', 'Apex Logistics', 'WH-Alpha'),
+  ('2026-02-05', 'TRK-202', 'Horizon Transport', 'WH-Beta'),
+  ('2026-03-12', 'TRK-101', 'Apex Logistics', 'WH-Gamma'),
+  ('2026-05-18', 'TRK-303', 'Swift Haulers', 'WH-Alpha'),
+  ('2026-06-01', 'TRK-404', 'BlueSky Cargo', 'WH-Delta');
+
+-- Disable Row Level Security (RLS) for sandbox development
+ALTER TABLE truck_options DISABLE ROW LEVEL SECURITY;
+ALTER TABLE truck_records DISABLE ROW LEVEL SECURITY;
+
+-- Alternative: If you prefer keeping RLS enabled, run the policies below:
+-- ALTER TABLE truck_options ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Enable public access for options" ON truck_options FOR ALL TO public USING (true) WITH CHECK (true);
+-- ALTER TABLE truck_records ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Enable public access for records" ON truck_records FOR ALL TO public USING (true) WITH CHECK (true);</code></pre>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end pt-3 border-t border-slate-100 gap-3">
+            <button type="button" id="close-setup-modal-btn-footer" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer" data-i18n="modalCloseBtn">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== UPPER FORM PANEL (Add / Edit Record) ==================== -->
+      <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" id="record-form-section">
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4.5 flex items-center justify-between" id="form-heading-panel">
+          <div class="flex items-center gap-2.5" id="form-heading-title-container">
+            <span class="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg" id="form-header-badge-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="form-heading-svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </span>
+            <h2 class="text-base font-bold text-slate-900" id="form-title" data-i18n="formTitleAdd">Add New Record</h2>
+          </div>
+          <span class="text-xs text-slate-400 font-medium hidden md:inline" id="form-context-help" data-i18n="formRequiredHelp">Fields are required</span>
+        </div>
+
+        <form class="p-6" id="record-form">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-5" id="form-inputs-grid">
+            
+            <!-- Field 1: Date -->
+            <div class="flex flex-col gap-1.5" id="input-date-container">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-widest pointer-events-none" for="record-date" id="lbl-record-date" data-i18n="lblDeliveryDate">
+                Delivery Date
+              </label>
+              <input 
+                type="date" 
+                id="record-date" 
+                name="date"
+                required 
+                class="glass-input w-full font-medium" 
+              />
+            </div>
+
+            <!-- Field 2: Truck Number Selector -->
+            <div class="flex flex-col gap-1.5" id="input-truck-container">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-widest pointer-events-none" for="record-truck-select" id="lbl-record-truck" data-i18n="lblTruckNumber">
+                Truck Number
+              </label>
+              <select 
+                id="record-truck-select" 
+                name="truckNumber"
+                required 
+                class="glass-input glass-select w-full font-semibold font-mono text-indigo-700 bg-white"
+              >
+                <!-- Dynamically Populated by script.js -->
+                <option value="" disabled selected data-i18n="placeholderSelectTruck">-- Select Truck Number --</option>
+              </select>
+            </div>
+
+            <!-- Field 3: Owners Selector -->
+            <div class="flex flex-col gap-1.5" id="input-owner-container">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-widest pointer-events-none" for="record-owner-select" id="lbl-record-owner" data-i18n="lblRegisteredOwner">
+                Registered Owner
+              </label>
+              <select 
+                id="record-owner-select" 
+                name="owner"
+                required 
+                class="glass-input glass-select w-full font-medium bg-white text-slate-800"
+              >
+                <!-- Dynamically Populated by script.js -->
+                <option value="" disabled selected data-i18n="placeholderSelectOwner">-- Select Owner Name --</option>
+              </select>
+            </div>
+
+            <!-- Field 4: Warehouse Selector -->
+            <div class="flex flex-col gap-1.5" id="input-wh-container">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-widest pointer-events-none" for="record-wh-select" id="lbl-record-wh" data-i18n="lblWarehouseNumber">
+                Warehouse Number
+              </label>
+              <select 
+                id="record-wh-select" 
+                name="warehouseNumber"
+                required 
+                class="glass-input glass-select w-full font-semibold font-mono text-slate-700 bg-white"
+              >
+                <!-- Dynamically Populated by script.js -->
+                <option value="" disabled selected data-i18n="placeholderSelectWarehouse">-- Select Warehouse --</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- Form Control Actions -->
+          <div class="mt-6 pt-5 border-t border-slate-100 flex items-center justify-end gap-3" id="form-actions-bar">
+            <!-- Toggle Cancel button only visible during editing records -->
+            <button 
+              type="button" 
+              id="cancel-edit-btn" 
+              class="hidden px-4.5 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 active:bg-slate-200 rounded-xl transition-all border border-slate-200 shrink-0 cursor-pointer"
+              data-i18n="btnCancelEdit"
+            >
+              Cancel Edit
+            </button>
+            
+            <button 
+              type="submit" 
+              id="submit-record-btn" 
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-200 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="submit-btn-svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+              </svg>
+              <span id="submit-btn-text" data-i18n="btnAddRecord">Add Record</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ==================== MAIN TABLE SECTION containing Filters & Actions ==================== -->
+      <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col relative" id="table-records-section">
+        
+        <!-- Table Action Header Panel -->
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" id="table-controls-banner">
+          <div class="flex items-center gap-2" id="table-title-branding">
+            <span class="p-1 px-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold font-mono rounded" id="table-title-badge" data-i18n="tableSegmentBadge">LOGS</span>
+            <h2 class="text-sm font-bold text-slate-900" id="table-main-title" data-i18n="tableMainTitle">Delivery Record Listing</h2>
+          </div>
+          
+          <!-- Filters Reset Action -->
+          <button 
+            type="button" 
+            id="clear-filters-btn" 
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50/50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-red-200 transition-all cursor-pointer self-start sm:self-auto"
+            title="Reset all filters on columns"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="clear-filters-svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"></path>
+            </svg>
+            <span data-i18n="btnResetFilters">Reset Table Filters</span>
+          </button>
+        </div>
+
+        <!-- Asynchronous Database loading overlay indicator -->
+        <div class="absolute inset-0 bg-white/70 backdrop-blur-subtle flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none z-20" id="table-loading-overlay">
+          <div class="flex flex-col items-center gap-3" id="loader-animation-container">
+            <div class="w-8 h-8 rounded-full border-3 border-indigo-200 border-t-indigo-600 animate-spin" id="spinner-ring"></div>
+            <span class="text-xs font-bold text-indigo-700 tracking-wider uppercase font-mono" id="loader-text" data-i18n="tableSyncing">Syncing Database...</span>
+          </div>
+        </div>
+
+        <!-- Scrollable content list wrapper -->
+        <div class="overflow-x-auto w-full" id="table-scroll-wrapper">
+          <table class="w-full text-left border-collapse custom-table" id="delivery-records-grid">
+            
+            <!-- Table Header Core labels and Independent Filters Row -->
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 select-none" id="table-fields-header">
+              
+              <!-- Category Headings Row -->
+              <tr class="border-b border-slate-100" id="th-labels-row">
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600 text-center w-16" id="th-no" data-i18n="colNo">No</th>
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600 min-w-[14rem]" id="th-date" data-i18n="colDeliveryDate">Delivery Date</th>
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600" id="th-truck-number" data-i18n="colTruckNum">Truck Num</th>
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600" id="th-owner" data-i18n="colOwner">Owner</th>
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600 w-44" id="th-warehouse" data-i18n="colWarehouseNo">Warehouse No</th>
+                <th scope="col" class="px-6 py-3.5 font-bold text-slate-600 text-right w-44" id="th-actions" data-i18n="colOperations">Operations</th>
+              </tr>
+
+              <!-- Independent Column-by-Column Searching and Filtering Row -->
+              <tr class="bg-slate-100/60 border-b border-slate-200" id="th-filters-row">
+                
+                <!-- Column 1 Filter: No -->
+                <td class="px-3 py-2 text-center" id="filter-no-cell">
+                  <input 
+                    type="number" 
+                    id="filter-no" 
+                    placeholder="#" 
+                    title="Filter by sequential index"
+                    data-i18n-placeholder="filterNoPlaceholder"
+                    data-i18n-title="filterNoPlaceholder"
+                    class="glass-input py-1 px-1.5 w-14 text-center placeholder-slate-400 font-mono text-xs text-slate-800" 
+                  />
+                </td>
+
+                <!-- Column 2 Filter: Start Date & End Date pickers -->
+                <td class="px-4 py-2" id="filter-date-cell">
+                  <div class="flex items-center gap-1.5 min-w-[13.5rem]" id="date-filters-flex">
+                    <div class="flex-1 flex flex-col gap-0.5" id="start-date-filter-box">
+                      <span class="text-[0.6rem] uppercase tracking-wider text-slate-500 font-semibold font-sans" data-i18n="filterStartLabel">Start</span>
+                      <input 
+                        type="date" 
+                        id="filter-start-date" 
+                        title="Start boundary range"
+                        class="glass-input py-1 px-1 text-[11px] leading-none w-full text-slate-700 bg-white" 
+                      />
+                    </div>
+                    <span class="text-xs text-slate-300 font-medium self-end pb-1.5" id="date-join-separator">&rarr;</span>
+                    <div class="flex-1 flex flex-col gap-0.5" id="end-date-filter-box">
+                      <span class="text-[0.6rem] uppercase tracking-wider text-slate-500 font-semibold font-sans" data-i18n="filterEndLabel">End</span>
+                      <input 
+                        type="date" 
+                        id="filter-end-date" 
+                        title="End boundary range"
+                        class="glass-input py-1 px-1 text-[11px] leading-none w-full text-slate-700 bg-white" 
+                      />
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Column 3 Filter: Truck Number Selection List -->
+                <td class="px-3 py-2" id="filter-truck-cell">
+                  <select 
+                    id="filter-truck" 
+                    class="glass-input glass-select w-full py-1 px-1.5 text-xs text-slate-800 font-mono font-semibold bg-white"
+                  >
+                    <option value="" data-i18n="filterAllTrucks">-- All Trucks --</option>
+                  </select>
+                </td>
+
+                <!-- Column 4 Filter: Owner Selection List -->
+                <td class="px-3 py-2" id="filter-owner-cell">
+                  <select 
+                    id="filter-owner" 
+                    class="glass-input glass-select w-full py-1 px-1.5 text-xs text-slate-800 bg-white"
+                  >
+                    <option value="" data-i18n="filterAllOwners">-- All Owners --</option>
+                  </select>
+                </td>
+
+                <!-- Column 5 Filter: Warehouse Selection List -->
+                <td class="px-3 py-2" id="filter-warehouse-cell">
+                  <select 
+                    id="filter-wh" 
+                    class="glass-input glass-select w-full py-1 px-1.5 text-xs text-slate-800 font-mono bg-white"
+                  >
+                    <option value="" data-i18n="filterAllWarehouses">-- All Warehouses --</option>
+                  </select>
+                </td>
+
+                <!-- Column 6 Filter: Non-editable / Clear Indicator spacer -->
+                <td class="px-6 py-2 text-right" id="filter-actions-cell">
+                  <span class="text-[0.68rem] text-slate-400 font-mono italic select-none" id="lbl-filtering-indicator" data-i18n="filterActiveIndicator">Filters active</span>
+                </td>
+
+              </tr>
+
+            </thead>
+
+            <!-- Table Rows Body container -->
+            <tbody class="divide-y divide-slate-100 font-normal" id="table-records-body">
+              <!-- Dynamically populated by script.js -->
+            </tbody>
+
+          </table>
+        </div>
+
+        <!-- Inline Empty Database State Representation -->
+        <div class="hidden p-12 text-center" id="empty-state-row">
+          <div class="max-w-xs mx-auto flex flex-col items-center gap-3.5" id="empty-state-card">
+            <div class="p-3 bg-slate-100 text-slate-400 rounded-full inline-block" id="empty-icon-box">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="empty-svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-800" id="empty-title" data-i18n="emptyTitle">No Matching Records Found</h3>
+              <p class="text-xs text-slate-400 mt-1" id="empty-description" data-i18n="emptyDesc">Try adjusting your independent column filters above or register a new delivery item.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== UNDER FORM PANEL (Create Lookup Menu Options) ==================== -->
+      <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" id="lookup-panel-section">
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4.5 flex flex-col gap-1" id="lookup-heading-panel">
+          <div class="flex items-center gap-2" id="lookup-title-branding">
+            <span class="p-1 px-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold font-mono rounded" id="lookup-title-badge" data-i18n="lookupsSegmentBadge">LOOKUPS</span>
+            <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider" id="lookup-main-title" data-i18n="lookupsMainTitle">Manage Lookup Dropdown Values</h2>
+          </div>
+          <p class="text-xs text-slate-400 font-medium" id="lookup-subtitle" data-i18n="lookupsSubtitle">Extend values list options dynamically for the above drop-down select menus.</p>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-8" id="lookup-forms-grid">
+          
+          <!-- Category 1: Truck Number lookup list builder -->
+          <div class="flex flex-col gap-3.5" id="column-truck-lookup">
+            <div class="shrink-0 flex flex-col gap-1" id="truck-lookup-header">
+              <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest" id="truck-lookup-title" data-i18n="lookupTruckTitle">Truck Numbers List</h3>
+              <span class="text-[0.68rem] text-slate-400 font-medium" id="truck-lookup-desc" data-i18n="lookupTruckDesc">Create or delete truck options</span>
+            </div>
+            
+            <!-- Quick Creator Mini-form -->
+            <div class="flex items-center gap-1.5" id="truck-add-form-group">
+              <input 
+                type="text" 
+                id="new-truck-input" 
+                placeholder="New Truck... (e.g. TRK-606)" 
+                data-i18n-placeholder="lookupTruckPlaceholder"
+                class="glass-input flex-1 text-xs font-semibold font-mono" 
+              />
+              <button 
+                type="button" 
+                id="add-truck-btn" 
+                class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg px-3 py-2 text-xs font-bold transition-all shadow-sm shadow-emerald-100 cursor-pointer text-center inline-flex items-center gap-1 shrink-0"
+                data-i18n="lookupAddBtn"
+              >
+                Add
+              </button>
+            </div>
+            
+            <!-- Registered values badge listing preview -->
+            <div class="bg-slate-50 border border-slate-200/50 rounded-xl p-3 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" id="truck-badges-list">
+              <!-- Generated Dynamically with delete capabilities -->
+            </div>
+          </div>
+
+          <!-- Category 2: Owners lookup list builder -->
+          <div class="flex flex-col gap-3.5" id="column-owner-lookup">
+            <div class="shrink-0 flex flex-col gap-1" id="owner-lookup-header">
+              <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest" id="owner-lookup-title" data-i18n="lookupOwnerTitle">Registered Owners</h3>
+              <span class="text-[0.68rem] text-slate-400 font-medium" id="owner-lookup-desc" data-i18n="lookupOwnerDesc">Register shipping companies</span>
+            </div>
+
+            <!-- Quick Creator Mini-form -->
+            <div class="flex items-center gap-1.5" id="owner-add-form-group">
+              <input 
+                type="text" 
+                id="new-owner-input" 
+                placeholder="New Owner... (e.g. Apex Cargo)" 
+                data-i18n-placeholder="lookupOwnerPlaceholder"
+                class="glass-input flex-1 text-xs" 
+              />
+              <button 
+                type="button" 
+                id="add-owner-btn" 
+                class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg px-3 py-2 text-xs font-bold transition-all shadow-sm shadow-emerald-100 cursor-pointer text-center inline-flex items-center gap-1 shrink-0"
+                data-i18n="lookupAddBtn"
+              >
+                Add
+              </button>
+            </div>
+
+            <!-- Registered values badge listing preview -->
+            <div class="bg-slate-50 border border-slate-200/50 rounded-xl p-3 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" id="owner-badges-list">
+              <!-- Generated Dynamically with delete capabilities -->
+            </div>
+          </div>
+
+          <!-- Category 3: Warehouse lookup list builder -->
+          <div class="flex flex-col gap-3.5" id="column-wh-lookup">
+            <div class="shrink-0 flex flex-col gap-1" id="wh-lookup-header">
+              <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest font-mono" id="wh-lookup-title" data-i18n="lookupWhTitle">Warehouse Numbers</h3>
+              <span class="text-[0.68rem] text-slate-400 font-medium" id="wh-lookup-desc" data-i18n="lookupWhDesc">Register logistical hubs</span>
+            </div>
+
+            <!-- Quick Creator Mini-form -->
+            <div class="flex items-center gap-1.5" id="wh-add-form-group">
+              <input 
+                type="text" 
+                id="new-wh-input" 
+                placeholder="New Hub... (e.g. WH-Epsilon)" 
+                data-i18n-placeholder="lookupWhPlaceholder"
+                class="glass-input flex-1 text-xs font-semibold font-mono" 
+              />
+              <button 
+                type="button" 
+                id="add-wh-btn" 
+                class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg px-3 py-2 text-xs font-bold transition-all shadow-sm shadow-emerald-100 cursor-pointer text-center inline-flex items-center gap-1 shrink-0"
+                data-i18n="lookupAddBtn"
+              >
+                Add
+              </button>
+            </div>
+
+            <!-- Registered values badge listing preview -->
+            <div class="bg-slate-50 border border-slate-200/50 rounded-xl p-3 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" id="wh-badges-list">
+              <!-- Generated Dynamically with delete capabilities -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Global Floating feedback notifications container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+    <!-- Custom Iframe-Safe Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-all duration-300">
+      <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-xl transform scale-100 transition-all duration-300 flex flex-col gap-4" id="confirm-modal-body">
+        <div class="flex items-start gap-3.5">
+          <div class="p-2.5 bg-rose-50 text-rose-600 rounded-xl shrink-0" id="confirm-modal-icon-container">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </div>
+          <div class="flex flex-col gap-1">
+            <h3 class="text-sm font-bold text-slate-900" id="confirm-modal-title" data-i18n="confirmDefaultTitle">Confirm Deletion</h3>
+            <p class="text-xs text-slate-500 font-medium leading-relaxed" id="confirm-modal-message" data-i18n="confirmDefaultMsg">Are you sure you want to proceed with this delete action?</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3 mt-2" id="confirm-modal-actions">
+          <button type="button" id="confirm-modal-cancel" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 active:bg-slate-200 rounded-xl transition-all border border-slate-200 cursor-pointer" data-i18n="confirmCancelLabel">Cancel</button>
+          <button type="button" id="confirm-modal-ok" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-semibold text-xs rounded-xl shadow-md shadow-rose-100 transition-all cursor-pointer" data-i18n="confirmDeleteLabel">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Entry point linking -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>

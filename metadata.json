@@ -1,0 +1,6 @@
+{
+  "name": "Truck Record Management",
+  "description": "A clean, modern, and responsive system for managing and filtering truck delivery records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
