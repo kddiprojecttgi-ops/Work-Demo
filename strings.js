@@ -59,6 +59,7 @@ export const STRINGS = {
     tableSegmentBadge: "LOGS",
     tableMainTitle: "Delivery Record Listing",
     btnResetFilters: "Reset Table Filters",
+    btnPrintPdf: "Print PDF Report",
     tableSyncing: "Syncing Database...",
     
     // Columns Headers

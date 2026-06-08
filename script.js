@@ -511,6 +511,7 @@ const DOM = {
   filterOwnerSelect: document.getElementById('filter-owner'),
   filterWhSelect: document.getElementById('filter-wh'),
   clearFiltersBtn: document.getElementById('clear-filters-btn'),
+  printPdfBtn: document.getElementById('print-pdf-btn'),
 
   // Table structures
   tableBody: document.getElementById('table-records-body'),
@@ -1012,6 +1013,12 @@ function setupFiltersHandlers() {
     renderRecordsTable();
     showToast(t('toastFiltersCleared'), 'info');
   });
+
+  if (DOM.printPdfBtn) {
+    DOM.printPdfBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
 }
 
 // Modal Toggle utilities
